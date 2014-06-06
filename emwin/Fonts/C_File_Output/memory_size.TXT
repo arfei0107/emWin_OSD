@@ -1,0 +1,7 @@
+Compile output object files  | ROM Size
+-----------------------------+----------
+font_ar_mingti_medium_b523.o |  1'117'591 
+font_arial19.o               |  1'795'925 
+font_hg_gb_gothic23.o        |    566'815 
+font_hggothicb19.o           |    496'171 
+font_hgpgothicb19.o          |    496'758 

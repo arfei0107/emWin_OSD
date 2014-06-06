@@ -1,0 +1,444 @@
+/*********************************************************************
+*                Golden-IC Technology Co.,Ltd                        *
+*                       www.golden-ic.com                            *
+**********************************************************************
+*        (c) 2007 - 2014 Golden-IC Technology Co., Ltd               *
+*                                                                    *
+**********************************************************************
+*                                                                    *
+* Source file: xIconSelBtn.c                                           *
+*                                                                    *
+**********************************************************************
+*/
+#include <string.h>        // Definition of NULL
+#include <stdlib.h>        // malloc() and free()
+#include "GUI.h"
+#include "WM.h"
+#include "BUTTON.h"
+#include "xIconSelBtn.h"
+#include "board.h"
+
+#if 1
+#undef  DEBUGOUT
+#undef  DEBUGSTR
+#define DEBUGOUT(...)
+#define DEBUGSTR(str)
+#endif
+
+/*********************************************************************
+*
+*       _Paint
+*/
+static void _Paint_PopupWin(WM_HWIN hWin)
+{
+    GUI_RECT          WinRect;
+    xIconSelBtn_OBJ   *pWidget;
+    xICON *pIcon;
+    xICON_CHECK_XY *pIconChkXY;
+    int i;
+    
+    if(!hWin) return;
+    
+    DEBUGOUT("xIconSelBtn::PopupWin hWin = 0x%08x\r\n", hWin);
+    WM_GetClientRect(&WinRect);
+    DEBUGOUT("xIconSelBtn::PopupWin Paint(%d,%d,%d,%d)\r\n",WinRect.x0, WinRect.y0, WinRect.x1, WinRect.y1);
+    
+    WM_GetUserData(hWin, &pWidget, sizeof(xIconSelBtn_OBJ*));
+    
+    //Draw Window Background area
+    GUI_SetColor(pWidget->PopupWinBkColor[1]); //Base Color
+    GUI_FillRoundedRect(WinRect.x0+1,WinRect.y0+1,WinRect.x1-1,WinRect.y1-1, 2);
+    GUI_SetColor(pWidget->PopupWinBkColor[0]); //OutLine Color
+    GUI_DrawRoundedRect(WinRect.x0,WinRect.y0,WinRect.x1,WinRect.y1, 2);
+    
+    //Draw icons BMP
+    for(i=0; i<pWidget->NumItems; i++)
+    {
+        pIcon= &pWidget->xIconArray[i];
+        pIconChkXY = &pWidget->xIconCheckXyArray[i];
+        
+        if(pIcon->pBMP)
+        {
+            if(i == pWidget->MovingIndex)
+            {
+                //Draw Forcus Frame on Icon BMP outside
+                int x0 = pIcon->x0 - pWidget->IconFocusFrameHWidth;
+                int y0 = pIcon->y0 - pWidget->IconFocusFrameVWidth;
+                int x1, y1;
+                x1 = x0 + pIcon->pBMP->XSize + (pWidget->IconFocusFrameHWidth*2);
+                y1 = y0 + pIcon->pBMP->YSize + (pWidget->IconFocusFrameVWidth*2);
+                GUI_SetColor(pWidget->PopupWinIconFocusColor);
+                GUI_FillRect(x0, y0, x1, y1);
+            }
+            GUI_DrawBitmap(pIcon->pBMP, pIcon->x0, pIcon->y0);
+        }
+        if( (pWidget->pCheckedBMP) && (i == pWidget->SelectedIndex) )
+        {
+            GUI_DrawBitmap(pWidget->pCheckedBMP, pIconChkXY->x0, pIconChkXY->y0);
+        }
+    }
+}
+
+/*********************************************************************
+*
+*       xIconSelBtn_UpdateIndex
+*/
+void xIconSelBtn_UpdateIndex(WM_HWIN hWin)
+{
+    xIconSelBtn_OBJ   *pWidget;
+    
+    if(!hWin) return;
+    
+    WM_GetUserData(hWin, &pWidget, sizeof(xIconSelBtn_OBJ*));
+    pWidget->SelectedIndex = pWidget->MovingIndex;
+}
+
+
+
+/*********************************************************************
+*
+*       xIconSelBtn_Inc_MoveIndex
+*/
+void xIconSelBtn_Inc_MoveIndex(WM_HWIN hWin)
+{
+    xIconSelBtn_OBJ   *pWidget;
+    
+    if(!hWin) return;
+    
+    WM_GetUserData(hWin, &pWidget, sizeof(xIconSelBtn_OBJ*));
+    
+    if(pWidget->MovingIndex < pWidget->NumItems - 1 )
+    {
+        pWidget->MovingIndex++;
+    }
+    else
+    {
+        pWidget->MovingIndex = 0;
+    }
+    WM_InvalidateWindow(hWin);
+}
+
+/*********************************************************************
+*
+*       xIconSelBtn_Dec_MoveIndex
+*/
+void xIconSelBtn_Dec_MoveIndex(WM_HWIN hWin)
+{
+    xIconSelBtn_OBJ   *pWidget;
+    
+    if(!hWin) return;
+    
+    WM_GetUserData(hWin, &pWidget, sizeof(xIconSelBtn_OBJ*));
+    
+    if(pWidget->MovingIndex > 0)
+    {
+        pWidget->MovingIndex--;
+    }
+    else
+    {
+        pWidget->MovingIndex = pWidget->NumItems - 1;
+    }
+    WM_InvalidateWindow(hWin);
+}
+
+
+/*********************************************************************
+*
+*       xIconSelBtn_PopupWin_Callback
+*/
+void xIconSelBtn_PopupWin_Callback(WM_MESSAGE * pMsg)
+{
+  WM_HWIN     hWin;
+  WM_KEY_INFO *pKeyInfo;
+  int Notification;
+  xIconSelBtn_OBJ *pWidget;
+  
+  hWin = pMsg->hWin;
+  
+  if(!hWin) return;
+  
+  WM_GetUserData(hWin, &pWidget, sizeof(xIconSelBtn_OBJ*));
+  
+  switch (pMsg->MsgId)
+  {
+  case WM_PAINT:
+    _Paint_PopupWin(hWin);
+    break;
+    
+  case WM_KEY:
+    pKeyInfo = (WM_KEY_INFO *)pMsg->Data.p;
+    
+    switch(pKeyInfo->Key)
+    {
+      case GUI_KEY_ESCAPE:
+        if(pKeyInfo->PressedCnt >0)
+        {
+            DEBUGOUT("xIconSelBtn::PopupWin(0x%08x) <- KEY_ESCAPE\r\n",hWin);
+            BUTTON_SetUserData(pWidget->hThis, pWidget, sizeof(xIconSelBtn_OBJ));
+            WM_SetFocus(pWidget->hThis);
+            WM_InvalidateWindow(pWidget->hThis);
+            WM_HideWindow(hWin);
+        }
+        break;
+      
+      case GUI_KEY_ENTER:
+        if(pKeyInfo->PressedCnt >0)
+        {
+            DEBUGOUT("xIconSelBtn::PopupWin(0x%08x) <- KEY_ENTER\r\n",hWin);
+            xIconSelBtn_UpdateIndex(hWin);
+            BUTTON_SetUserData(pWidget->hThis, pWidget, sizeof(xIconSelBtn_OBJ));
+            WM_SetFocus(pWidget->hThis);
+            WM_InvalidateWindow(pWidget->hThis);
+            WM_HideWindow(hWin);
+        }
+        break;
+        
+      case GUI_KEY_LEFT:
+        if(pKeyInfo->PressedCnt >0)
+        {
+            DEBUGOUT("xIconSelBtn::PopupWin(0x%08x) <- KEY_LEFT\r\n",hWin);
+            xIconSelBtn_Dec_MoveIndex(hWin);
+        }
+        break;
+        
+      case GUI_KEY_RIGHT:
+        if(pKeyInfo->PressedCnt >0)
+        {
+            DEBUGOUT("xIconSelBtn::PopupWin(0x%08x) <- KEY_RIGHT\r\n",hWin);
+            xIconSelBtn_Inc_MoveIndex(hWin);
+        }
+        break;
+        
+      default:
+        WM_DefaultProc(pMsg);
+        break;
+    }
+    break;
+    
+  default:
+    WM_DefaultProc(pMsg);
+  }
+}
+
+
+/*********************************************************************
+*
+*       xIconSelBtn_PopupWin
+*/
+void xIconSelBtn_PopupWin(xIconSelBtn_Handle hWin)
+{
+    static xIconSelBtn_OBJ tWidget;
+    static xIconSelBtn_OBJ *pWidget;
+    GUI_RECT r;
+    
+    if(!hWin) return;
+    
+    DEBUGOUT("xIconSelBtn_PopupWin(hWin) = 0x%08x\r\n", hWin);
+    
+    BUTTON_GetUserData(hWin, &tWidget, sizeof(xIconSelBtn_OBJ));
+    pWidget = &tWidget;
+    
+    if(tWidget.hPopupWin == NULL)
+    {
+        r = tWidget.PopupWinRECT;
+        DEBUGOUT("xIconSelBtn_PopupWin() new Window(%d,%d,%d,%d): %d items\r\n",r.x0,r.y0,r.x1,r.y1, tWidget.NumItems);
+        
+        tWidget.hPopupWin = WM_CreateWindowAsChild(r.x0, r.y0, r.x1 - r.x0, r.y1 - r.y0,
+                                NULL,       //hParent
+                                WM_CF_SHOW, //WinFlags
+                                xIconSelBtn_PopupWin_Callback, //WM_CALLBACK * cb
+                                sizeof(xIconSelBtn_OBJ*)
+                                );
+        
+        if(tWidget.hPopupWin == NULL)
+        {
+            DEBUGOUT("\t new Window creating failed!!!\r\n");
+            return;
+        }
+        
+        tWidget.MovingIndex = tWidget.SelectedIndex;
+        WM_SetUserData(tWidget.hPopupWin, &pWidget, sizeof(xIconSelBtn_OBJ*));
+        WM_SetFocus(tWidget.hPopupWin);
+    }
+    else
+    {
+        tWidget.MovingIndex = tWidget.SelectedIndex;
+        WM_SetUserData(tWidget.hPopupWin, &pWidget, sizeof(xIconSelBtn_OBJ*));
+        WM_ShowWindow(tWidget.hPopupWin);
+        WM_SetFocus(tWidget.hPopupWin);
+    }
+}
+
+
+/*********************************************************************
+*
+*       _Paint
+*/
+static void _Paint(xIconSelBtn_Handle hWin)
+{
+    GUI_RECT          WinRect;
+    xIconSelBtn_OBJ   tWidget;
+    GUI_CONST_STORAGE GUI_BITMAP* pBMP;
+    int xSize, ySize;
+    
+    if(!hWin) return;
+    
+    DEBUGOUT("xIconSelBtn hWin = 0x%08x\r\n", hWin);
+    WM_GetWindowRectEx(hWin, &WinRect);
+    GUI_MoveRect(&WinRect, -WinRect.x0, -WinRect.y0);
+    DEBUGOUT("xIconSelBtn Paint(%d,%d,%d,%d)\r\n",WinRect.x0, WinRect.y0, WinRect.x1, WinRect.y1);
+  
+    BUTTON_GetUserData(hWin, &tWidget, sizeof(xIconSelBtn_OBJ));
+    tWidget.hThis = hWin;
+    BUTTON_SetUserData(hWin, &tWidget, sizeof(xIconSelBtn_OBJ));
+    
+    if(tWidget.pBkBMP)
+    {
+        GUI_DrawBitmap(tWidget.pBkBMP, WinRect.x0, WinRect.y0);
+    }
+    else
+    {
+        //Draw Window Frame Outline, and Background.
+        GUI_SetColor(tWidget.aBkColor[0]);
+        //Draw Window Frame Outline, and Background.
+        GUI_FillRoundedRect(WinRect.x0, WinRect.y0, WinRect.x1, WinRect.y1, 1);
+    }
+    
+    xSize = WinRect.x1 - WinRect.x0;
+    ySize = WinRect.y1 - WinRect.y0;
+    pBMP = tWidget.xIconArray[tWidget.SelectedIndex].pBMP;
+    if(pBMP)
+    {
+        //Draw BMP in H & V center
+        GUI_DrawBitmap(pBMP, WinRect.x0 + (xSize - pBMP->XSize)/2 , WinRect.y0 + (ySize - pBMP->YSize)/2 );
+    }
+    
+}
+
+/*********************************************************************
+*
+*       xIconSelBtn_Inc
+*/
+int xIconSelBtn_Inc(xIconSelBtn_Handle hWin)
+{
+    xIconSelBtn_OBJ   tWidget;
+    
+    if(!hWin) return -1;
+    
+    BUTTON_GetUserData(hWin, &tWidget, sizeof(xIconSelBtn_OBJ));
+    
+    if(tWidget.SelectedIndex < tWidget.NumItems -1)
+    {
+        tWidget.SelectedIndex++;
+        
+    }
+    else
+    {
+        tWidget.SelectedIndex = 0;
+    }
+    
+    BUTTON_SetUserData(hWin, &tWidget, sizeof(xIconSelBtn_OBJ));
+    WM_InvalidateWindow(hWin);
+    
+    return tWidget.SelectedIndex;
+}
+
+
+/*********************************************************************
+*
+*       xIconSelBtn_Dec
+*/
+int xIconSelBtn_Dec(xIconSelBtn_Handle hWin)
+{
+    xIconSelBtn_OBJ   tWidget;
+    
+    if(!hWin) return -1;
+    
+    BUTTON_GetUserData(hWin, &tWidget, sizeof(xIconSelBtn_OBJ));
+    
+    if(tWidget.SelectedIndex > 0)
+    {
+        tWidget.SelectedIndex--;
+        
+    }
+    else
+    {
+        tWidget.SelectedIndex = tWidget.NumItems - 1;
+    }
+    
+    BUTTON_SetUserData(hWin, &tWidget, sizeof(xIconSelBtn_OBJ));
+    WM_InvalidateWindow(hWin);
+    
+    return tWidget.SelectedIndex;
+}
+
+
+/*********************************************************************
+*
+*       xIconSelBtn_Callback
+*/
+void xIconSelBtn_Callback(WM_MESSAGE * pMsg) {
+  xIconSelBtn_Handle    hWin;
+  WM_KEY_INFO          *pKeyInfo;
+  int Notification;
+  
+  hWin = pMsg->hWin;
+  
+  switch (pMsg->MsgId)
+  {
+  case WM_PAINT:
+    _Paint(hWin);
+    break;
+    
+  case WM_KEY:
+    pKeyInfo = (WM_KEY_INFO *)pMsg->Data.p;
+    
+    switch(pKeyInfo->Key)
+    {
+      //case GUI_KEY_ESCAPE:
+      //  if(pKeyInfo->PressedCnt >0)
+      //  {
+      //      DEBUGOUT("xIconSelBtn <- KEY_ESCAPE\r\n");
+      //      tWidget.eButtonState = xKB_BTN_FOCUSED;
+      //      BUTTON_SetUserData(hWin, &tWidget, sizeof(xBUTTON_Obj));
+      //      WM_SetFocus(hWin);
+      //      WM_InvalidateWindow(hWin);
+      //  }
+      //  break;
+      
+      case GUI_KEY_ENTER:
+        if(pKeyInfo->PressedCnt >0)
+        {
+            DEBUGOUT("xIconSelBtn(0x%08x) <- KEY_ENTER\r\n",hWin);
+            xIconSelBtn_PopupWin(hWin);
+        }
+        break;
+        
+      case GUI_KEY_LEFT:
+        if(pKeyInfo->PressedCnt >0)
+        {
+            DEBUGOUT("xIconSelBtn(0x%08x) <- KEY_LEFT\r\n",hWin);
+            xIconSelBtn_Dec(hWin);
+        }
+        break;
+        
+      case GUI_KEY_RIGHT:
+        if(pKeyInfo->PressedCnt >0)
+        {
+            DEBUGOUT("xIconSelBtn(0x%08x) <- KEY_RIGHT\r\n",hWin);
+            xIconSelBtn_Inc(hWin);
+        }
+        break;
+        
+      default:
+        WM_DefaultProc(pMsg);
+        break;
+    }
+    break;
+    
+  default:
+    WM_DefaultProc(pMsg);
+  }
+}
+
+

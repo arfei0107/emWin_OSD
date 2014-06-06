@@ -1,0 +1,544 @@
+/*********************************************************************
+*                Golden-IC Technology Co.,Ltd                        *
+*                       www.golden-ic.com                            *
+**********************************************************************
+*        (c) 2007 - 2014 Golden-IC Technology Co., Ltd               *
+*                                                                    *
+**********************************************************************
+*                                                                    *
+* Source file: xBUTTON.c                                           *
+*                                                                    *
+**********************************************************************
+*/
+#include <string.h>        // Definition of NULL
+#include <stdlib.h>        // malloc() and free()
+#include "GUI.h"
+#include "WM.h"
+#include "xMoveBtn.h"
+#include "SLIDER.h"
+#include "TEXT.h"
+#include "board.h"
+
+#if 0
+#undef  DEBUGOUT
+#undef  DEBUGSTR
+#define DEBUGOUT(...)
+#define DEBUGSTR(str)
+#endif
+
+/*********************************************************************
+*
+*       xBUTTON_Default
+*/
+const xMOVE_BTN_Obj xMOVE_BTN_Default =
+{
+  xM_BTN_NORMAL,                                           //eMOVE_BTN_STATE
+  { NULL, NULL, NULL, NULL},                        //GUI_BITMAP* aBmp[4];
+  NULL,                                             //*pText
+  GUI_TA_LEFT | GUI_TA_VCENTER,                     //TextAlign
+  {0,0,0,0},                                        //GUI_RECT TextRect;
+  &GUI_Font13_1,                                    //GUI_FONT* pFont
+  {GUI_DARKGRAY,GUI_WHITE, GUI_BLACK, GUI_YELLOW},  //aTextColor[4];
+  {GUI_UI_COLOR1,GUI_UI_COLOR1, GUI_UI_COLOR11, GUI_UI_COLOR12},  //aBkColor[4];
+  {0,1023},                                         //tVrange;
+  256-1,                                            //VHeight;
+  300,                                              //Vidx;
+  0,                                                //BtnNum
+  NULL,                                             //pfSetValue
+  0                                                 //NumExtraBytes;
+};
+
+
+/*********************************************************************
+*
+*       _Paint
+*/
+static void _Paint(xMOVE_BTN_Handle hWin, xMOVE_BTN_Obj *pWidget)
+{
+    GUI_RECT          WinRect, ParentWinRect;
+    int y0, y1; 
+    
+    DEBUGOUT("xMoveBtn hWin = 0x%08x\r\n", hWin);
+    WM_GetWindowRectEx(WM_GetParent(hWin), &ParentWinRect);
+    WM_GetWindowRectEx(hWin, &WinRect);
+    
+    y0 = ParentWinRect.y1 - WinRect.y0;
+    y1 = (pWidget->Vidx * pWidget->VHeight) / pWidget->tVrange.Max;
+    
+    DEBUGOUT("MoveBtn (%d,%d)\r\n", y0, y1);
+    
+    if(y0 != y1)
+    {
+        WM_MoveWindow(hWin, 0, y0 - y1);
+    }
+    
+    //GUI_MoveRect(&WinRect, -WinRect.x0, -WinRect.y0);
+    WM_GetClientRectEx(hWin, &WinRect);
+    //DEBUGOUT("MoveBtnPaint(%d,%d,%d,%d)\r\n",WinRect.x0, WinRect.y0, WinRect.x1, WinRect.y1);
+  
+    if(pWidget->aBmp[pWidget->eButtonState])
+    {
+        DEBUGOUT("MoveBtn State: %d\r\n",pWidget->eButtonState);
+        DEBUGOUT("MoveBtnPaint(pBmp:0x%08x)\r\n",(U32)(pWidget->aBmp[pWidget->eButtonState]));
+        GUI_DrawBitmap(pWidget->aBmp[pWidget->eButtonState], WinRect.x0, WinRect.y0);
+    }
+    else
+    {
+        //Draw Window Frame Outline, and Background.
+        GUI_SetColor(pWidget->aBkColor[pWidget->eButtonState]);
+        GUI_FillRectEx(&WinRect);
+    }
+    
+    if(pWidget->pFont)
+    {
+        GUI_SetFont(pWidget->pFont);
+    }
+    GUI_SetColor(pWidget->aTextColor[pWidget->eButtonState]);
+    GUI_SetTextMode(GUI_TM_TRANS);
+    
+    if(pWidget->pText)
+    {
+        DEBUGOUT("MoveBtn Draw Text: %s\r\n",pWidget->pText);
+        if( (pWidget->TextRect.x0 | pWidget->TextRect.x1 | pWidget->TextRect.y1 | pWidget->TextRect.y1) == 0)
+        {
+            GUI_DispStringInRect(pWidget->pText, &WinRect, GUI_TA_VCENTER | GUI_TA_LEFT);
+        }
+        else
+        {
+            GUI_DispStringInRect(pWidget->pText, &pWidget->TextRect, (pWidget->TextAlign != 0) ?  pWidget->TextAlign : (GUI_TA_VCENTER | GUI_TA_LEFT) );
+        }
+    }
+}
+
+/*********************************************************************
+*
+*       _GotoPrevBtn
+*/
+static void _GotoPrevBtn(xMOVE_BTN_Handle hWin)
+{
+    xMOVE_BTN_Handle hWinNext, hWinIndex;
+    xMOVE_BTN_Obj    tBtn, tNextBtn;
+    int fTurnAround = 0;
+    
+    if(!hWin) return;
+    
+    hWinNext = hWinIndex = hWin;
+    
+    while(hWinIndex != NULL)
+    {
+        hWinNext = WM_GetPrevSibling(hWinIndex);
+        if(hWinNext)
+        {
+            WM_GetUserData(hWinNext, &tNextBtn, sizeof(xMOVE_BTN_Obj));
+            if(tNextBtn.eButtonState != xM_BTN_DISABLE )
+            {
+               //Found next enabled Btn, exit loop
+                WM_SetFocus(hWinNext);
+                return;
+            }
+            else
+            {
+                hWinIndex = hWinNext;
+            }
+        }
+        else
+        {
+            //On First Sibling, go to last Sibling
+            if( fTurnAround == 1) return;
+            
+            fTurnAround = 1;
+            
+            hWinIndex = hWinNext = hWin;
+            while( hWinNext != 0)
+            {
+                hWinIndex = hWinNext;
+                hWinNext  = WM_GetNextSibling(hWinIndex);
+            }
+            
+            if(hWinIndex)
+            {
+                hWinNext = hWinIndex;
+                WM_GetUserData(hWinNext, &tNextBtn, sizeof(xMOVE_BTN_Obj));
+                if( tNextBtn.eButtonState != xM_BTN_DISABLE )
+                {
+                    WM_SetFocus(hWinNext);
+                    return;
+                }
+                else
+                {
+                    hWinIndex = hWinNext;
+                }
+            }
+            else
+            {
+                DEBUGOUT("MoveBtn(Win:0x%08x has GUI_KEY_UP, but NextWin is invalid.\r\n",hWin);
+                return;
+            }
+        }
+    }
+}
+
+
+
+/*********************************************************************
+*
+*       _GotoNextBtn
+*/
+static void _GotoNextBtn(xMOVE_BTN_Handle hWin)
+{
+    xMOVE_BTN_Handle hWinNext, hWinIndex;
+    xMOVE_BTN_Obj    tBtn, tNextBtn;
+    int fTurnAround = 0;
+    
+    if(!hWin) return;
+    
+    hWinNext = hWinIndex = hWin;
+    
+    while(hWinIndex != NULL)
+    {
+        hWinNext = WM_GetNextSibling(hWinIndex);
+        if(hWinNext)
+        {
+            WM_GetUserData(hWinNext, &tNextBtn, sizeof(xMOVE_BTN_Obj));
+            if(tNextBtn.eButtonState != xM_BTN_DISABLE )
+            {
+               //Found next enabled Btn, exit loop
+                WM_SetFocus(hWinNext);
+                return;
+            }
+            else
+            {
+                hWinIndex = hWinNext;
+            }
+        }
+        else
+        {
+            //On First Sibling, go to last Sibling
+            if( fTurnAround == 1) return;
+            
+            fTurnAround = 1;
+            
+            hWinIndex = WM_GetParent(hWin);
+            hWinIndex = WM_GetFirstChild(hWinIndex);
+            if(hWinIndex)
+            {
+                hWinNext = hWinIndex;
+                WM_GetUserData(hWinNext, &tNextBtn, sizeof(xMOVE_BTN_Obj));
+                if( tNextBtn.eButtonState != xM_BTN_DISABLE )
+                {
+                    WM_SetFocus(hWinNext);
+                    return;
+                }
+                else
+                {
+                    hWinIndex = hWinNext;
+                }
+            }
+            else
+            {
+                DEBUGOUT("MoveBtn(Win:0x%08x has GUI_KEY_DOWN, but NextWin is invalid.\r\n",hWin);
+                return;
+            }
+        }
+    }
+}
+/*********************************************************************
+*
+*       xMOVE_BTN_Callback
+*/
+void xMoveBtn_Callback(WM_MESSAGE * pMsg) {
+  xMOVE_BTN_Handle    hWin, NextWin, hWinIndex;
+  WM_KEY_INFO     * pKeyInfo;
+  xMOVE_BTN_Obj       tWidget, tNextBtn;
+  int WinID, Value;
+  static char Text[10];
+  int SliderValue;
+  GUI_RECT rParent, rWin;
+  int Notification;
+  
+  hWin = pMsg->hWin;
+  WM_GetUserData(hWin, &tWidget, sizeof(xMOVE_BTN_Obj));
+  
+  switch (pMsg->MsgId)
+  {
+  case WM_PAINT:
+    _Paint(hWin, &tWidget);
+    break;
+    
+  case WM_KEY:
+    pKeyInfo = (WM_KEY_INFO *)pMsg->Data.p;
+    
+    switch(pKeyInfo->Key)
+    {
+      //case GUI_KEY_ESCAPE:
+      //  if(pKeyInfo->PressedCnt >0)
+      //  {
+      //      DEBUGOUT("xBtn <- KEY_ESCAPE\r\n");
+      //      tWidget.eButtonState = xM_BTN_FOCUSED;
+      //      WM_SetUserData(hWin, &tWidget, sizeof(xBUTTON_Obj));
+      //      WM_SetFocus(hWin);
+      //      WM_InvalidateWindow(hWin);
+      //  }
+        break;
+      
+      case GUI_KEY_LEFT:
+        if(pKeyInfo->PressedCnt >0)
+        {
+            DEBUGOUT("xMoveBtn(0x%08x) <- KEY_UP\r\n",hWin);
+            
+            _GotoPrevBtn(hWin);
+        }
+        break;
+        
+      case GUI_KEY_RIGHT:
+        if(pKeyInfo->PressedCnt >0)
+        {
+            DEBUGOUT("xMoveBtn(0x%08x) <- GUI_KEY_DOWN\r\n",hWin);
+            _GotoNextBtn(hWin);
+        }
+        break;
+        
+      case GUI_KEY_UP:
+        if(pKeyInfo->PressedCnt >0)
+        {
+            DEBUGOUT("xMoveBtn(0x%08x) <- GUI_KEY_UP\r\n",hWin);
+            
+            if( tWidget.Vidx < tWidget.tVrange.Max )
+            {
+                tWidget.Vidx++;
+                WM_SetUserData(hWin, &tWidget, sizeof(xMOVE_BTN_Obj));
+                Value = tWidget.pfSetValue(hWin);
+                if(Value != -1) tWidget.Vidx = Value;
+                WM_SetUserData(hWin, &tWidget, sizeof(xMOVE_BTN_Obj));
+                WM_InvalidateWindow(hWin);
+                Notification = WM_NOTIFICATION_VALUE_CHANGED;
+                WM_NotifyParent(hWin, Notification);
+            }
+        }
+        break;
+        
+      case GUI_KEY_DOWN:
+        if(pKeyInfo->PressedCnt >0)
+        {
+            DEBUGOUT("xMoveBtn(0x%08x) <- GUI_KEY_DOWN\r\n",hWin);
+            
+            if( tWidget.Vidx > tWidget.tVrange.Min )
+            {
+                tWidget.Vidx--;
+                WM_SetUserData(hWin, &tWidget, sizeof(xMOVE_BTN_Obj));
+                Value = tWidget.pfSetValue(hWin);
+                if(Value != -1) tWidget.Vidx = Value;
+                WM_SetUserData(hWin, &tWidget, sizeof(xMOVE_BTN_Obj));
+                WM_InvalidateWindow(hWin);
+                Notification = WM_NOTIFICATION_VALUE_CHANGED;
+                WM_NotifyParent(hWin, Notification);
+            }
+        }
+        break;
+        
+      default:
+        WM_DefaultProc(pMsg);
+        break;
+    }
+    break;
+    
+  case WM_SET_FOCUS:
+    if (pMsg->Data.v)
+    {
+      pMsg->Data.v = 0;
+      
+      if(tWidget.eButtonState != xM_BTN_DISABLE)
+      {
+          tWidget.eButtonState = xM_BTN_FOCUSED;
+          WM_SetUserData(hWin, &tWidget, sizeof(xMOVE_BTN_Obj));
+      }
+      else
+      {
+          _GotoNextBtn(hWin);
+      }
+      DEBUGOUT("xMOVE_BTN(0x%08x) Has Focus\r\n",hWin);
+    }
+    else
+    {
+      DEBUGOUT("xMOVE_BTN(0x%08x) Lost Focus\r\n",hWin);
+      if(tWidget.eButtonState == xM_BTN_FOCUSED)
+      {
+          tWidget.eButtonState = xM_BTN_NORMAL;
+          WM_SetUserData(hWin, &tWidget, sizeof(xMOVE_BTN_Obj));
+      }
+    }
+    WM_InvalidateWindow(hWin);
+    break;
+      
+  default:
+    WM_DefaultProc(pMsg);
+  }
+}
+
+/*********************************************************************
+*
+*       xMOVE_BTN_GetUserData
+*/
+int xMOVE_BTN_GetUserData(xMOVE_BTN_Handle hWin, void * pDest, int SizeOfBuffer) {
+  xMOVE_BTN_Obj   tWidget;
+  int            NumBytes;
+  U8           * pExtraBytes;
+  if (SizeOfBuffer <= 0) {
+    return 0;
+  }
+  WM_GetUserData(hWin, &tWidget, sizeof(xMOVE_BTN_Obj));
+  pExtraBytes = (U8 *)malloc(sizeof(xMOVE_BTN_Obj) + tWidget.NumExtraBytes);
+  if (pExtraBytes) {
+    WM_GetUserData(hWin, pExtraBytes,
+                   sizeof(xMOVE_BTN_Obj) + tWidget.NumExtraBytes);
+    if (SizeOfBuffer >= tWidget.NumExtraBytes) {
+      NumBytes = tWidget.NumExtraBytes;
+    } else {
+      NumBytes = SizeOfBuffer;
+    }
+    GUI_MEMCPY(pDest, pExtraBytes + sizeof(xMOVE_BTN_Obj), NumBytes);
+    free(pExtraBytes);
+    return NumBytes;
+  }
+  return 0;
+}
+
+/*********************************************************************
+*
+*       xMOVE_BTN_SetUserData
+*/
+int xMOVE_BTN_SetUserData(xMOVE_BTN_Handle hWin, void * pSrc, int SizeOfBuffer) {
+  xMOVE_BTN_Obj   tWidget;
+  int            NumBytes;
+  U8           * pExtraBytes;
+  if (SizeOfBuffer <= 0) {
+    return 1;
+  }
+  WM_GetUserData(hWin, &tWidget, sizeof(xMOVE_BTN_Obj));
+  pExtraBytes = (U8 *)malloc(sizeof(xMOVE_BTN_Obj) + tWidget.NumExtraBytes);
+  if (pExtraBytes) {
+    WM_GetUserData(hWin, pExtraBytes,
+                   sizeof(xMOVE_BTN_Obj) + tWidget.NumExtraBytes);
+    if (SizeOfBuffer >= tWidget.NumExtraBytes) {
+      NumBytes = tWidget.NumExtraBytes;
+    } else {
+      NumBytes = SizeOfBuffer;
+    }
+    GUI_MEMCPY(pExtraBytes + sizeof(xMOVE_BTN_Obj), pSrc, NumBytes);
+    WM_SetUserData(hWin, pExtraBytes,
+                   sizeof(xMOVE_BTN_Obj) + tWidget.NumExtraBytes);
+    free(pExtraBytes);
+    return 0;
+  }
+  return 1;
+}
+
+/*********************************************************************
+*
+*       xMOVE_BTN_SetText
+*/
+void xMOVE_BTN_SetText(xMOVE_BTN_Handle hObj, const char* s)
+{
+  xMOVE_BTN_Obj   tWidget;
+  
+  if (hObj)
+  {
+    WM_GetUserData(hObj, &tWidget, sizeof(xMOVE_BTN_Obj));
+    tWidget.pText = s;
+    WM_SetUserData(hObj, &tWidget, sizeof(xMOVE_BTN_Obj));
+    WM_InvalidateWindow(hObj);
+  }
+}
+
+/*********************************************************************
+*
+*       xMOVE_BTN_SetBmp
+*/
+void xMOVE_BTN_SetBmp(xMOVE_BTN_Handle hObj, GUI_CONST_STORAGE GUI_BITMAP* pBmp, eMOVE_BTN_STATE xBtnState)
+{
+    xMOVE_BTN_Obj   tWidget;
+    
+    if( (hObj) && (pBmp) )
+    {
+        WM_GetUserData(hObj, &tWidget, sizeof(xMOVE_BTN_Obj));
+        if(xBtnState <= xM_BTN_PRESSED)
+        {
+            tWidget.aBmp[xBtnState] = pBmp;
+            WM_SetUserData(hObj, &tWidget, sizeof(xMOVE_BTN_Obj));
+        }
+    }
+}
+
+/*********************************************************************
+*
+*       xMOVE_BTN_CreateEx
+*/
+xMOVE_BTN_Handle xMOVE_BTN_CreateEx(int x0, int y0, int xSize, int ySize, WM_HWIN hParent, int WinFlags, int ExFlags, int Id)
+{
+  xMOVE_BTN_Handle   hWin;
+  xMOVE_BTN_Obj      tWidget;
+  
+  tWidget               = xMOVE_BTN_Default;
+  
+  hWin = WM_CreateWindowAsChild(x0, y0, xSize, ySize, hParent, WinFlags,
+                                xMoveBtn_Callback, sizeof(xMOVE_BTN_Obj));
+  WM_SetUserData(hWin, &tWidget, sizeof(xMOVE_BTN_Obj));
+  return hWin;
+}
+
+
+/*********************************************************************
+*
+*       xMOVE_BTN_CreateUser
+*/
+xMOVE_BTN_Handle xMOVE_BTN_CreateUser(int x0, int y0, int xSize, int ySize, WM_HWIN hParent, int WinFlags, int ExFlags, int Id, int NumExtraBytes)
+{
+  xMOVE_BTN_Handle   hWin;
+  xMOVE_BTN_Obj      tWidget;
+  
+  tWidget               = xMOVE_BTN_Default;
+  tWidget.NumExtraBytes = NumExtraBytes;
+  
+  hWin = WM_CreateWindowAsChild(x0, y0, xSize, ySize, hParent, WinFlags,
+                                xMoveBtn_Callback, sizeof(xMOVE_BTN_Obj) + NumExtraBytes);
+  WM_SetUserData(hWin, &tWidget, sizeof(xMOVE_BTN_Obj));
+  return hWin;
+}
+
+
+/*********************************************************************
+*
+*       xMOVE_BTN_CreateIndirect
+*/
+xMOVE_BTN_Handle xMOVE_BTN_CreateIndirect(const GUI_WIDGET_CREATE_INFO* pCreateInfo, WM_HWIN hWinParent, int x0, int y0, WM_CALLBACK* cb)
+{
+  xMOVE_BTN_Handle  hThis;
+  xMOVE_BTN_Obj     *ptWidget;
+  
+  hThis = xMOVE_BTN_CreateUser(pCreateInfo->x0 + x0, pCreateInfo->y0 + y0,
+                          pCreateInfo->xSize, pCreateInfo->ySize,
+                          hWinParent, 0, pCreateInfo->Flags, pCreateInfo->Id, pCreateInfo->NumExtraBytes);
+  if(pCreateInfo->Para)
+  {
+    ptWidget = (xMOVE_BTN_Obj*) pCreateInfo->Para;
+    WM_SetUserData(hThis, ptWidget, sizeof(xMOVE_BTN_Obj));
+    if(!ptWidget->pText)
+    {
+        xMOVE_BTN_SetText(hThis, pCreateInfo->pName);
+    }
+  }
+  else
+  {
+    xMOVE_BTN_SetText(hThis, pCreateInfo->pName);
+  }
+  
+  WM_SetHasTrans(hThis);
+  
+  if(cb)
+  {
+    WM_SetCallback(hThis, cb);
+  }
+  
+  return hThis;
+}
+

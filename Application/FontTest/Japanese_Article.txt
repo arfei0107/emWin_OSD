@@ -1,0 +1,27 @@
+ソニーは米ラスベガスのCES展示ブースで新製品発表会を開催し、Sony
+Ericsson Mobile Communications（以下Sony Ericsson）によるAndroid
+スマートフォンの新機種「Xperia S」および「Xperia ion」を発表した
+。今回発表されたXperia SとXperia ionは、いずれもAndroid 2.3を搭
+載した状態で出荷され、今年第2四半期中にはAndroid 4.0へのアップグ
+レードが提供される予定。ともにプロセッサには1.5GHz動作のデュアル
+コアSnapdragon「MSM8260」を採用している。Xperia Sはグローバル市場
+を対象にした3Gモデルなのに対し、Xperia ionはAT&TのLTEネットワーク
+に対応した初のLTE版Xperiaで、AT&Tの販売チャネルを通じて販売される
+。Xperia Sは4.3インチ、Xperia ionは4.6インチのHD（1280×720）ディ
+スプレイを搭載するハイエンドモデルで、いずれも
+「Exmor R for mobile」採用の1200万画素のカメラ、高画質化機能の
+「Mobile BRAVIA Engine」、HDMI出力、NFCなどの機能を搭載する。また
+、PlayStation Certified機器となっており、PlayStation Storeで購入
+したゲームを楽しむことができる。内蔵フラッシュメモリはXperia Sが
+32GB、Xperia ionが16GB。
+Androidアプリの脆弱性届出、2013年は急激に増加--IPA四半期レポート
+（IPA）脆弱性関連情報の届出件数の四半期別推移の画像脆弱性関連情報
+の届出件数の四半期別推移修正完了件数の画像修正完了件数
+Androidアプリの届出件数の年別推移の画像
+Androidアプリの届出件数の年別推移
+独立行政法人 情報処理推進機構（IPA）および一般社団法人 JPCERT
+コーディネーションセンター（JPCERT/CC）は1月22日、2013年第4四半期
+における「ソフトウェア等の脆弱性関連情報に関する届出状況」を発表し
+た。これによると、同四半期のIPAへの脆弱性関連情報の届出件数は、ソ
+フトウェア製品に関するもの88件、Webサイト（Webアプリケーション）に
+関するもの219件の合計307件であった。届出受付開始（2004年7月8日）か

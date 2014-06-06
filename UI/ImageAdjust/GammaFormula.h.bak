@@ -1,0 +1,7 @@
+#ifndef __GammaFormula_H__
+#define __GammaFormula_H__
+
+typedef short WORD;
+typedef unsigned char  BYTE;
+
+#endif

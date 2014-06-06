@@ -1,0 +1,145 @@
+//----------------------------------------------------
+//
+// Golden IC Technology Co., Ltd.
+//
+// Project Name: AOCI OSD emWin add new Widget Library
+// Hardware: 
+//    AOCI Projector PCB,
+//    MCU: LPC4350
+//    Memory: SPIFI(qSPI) Flash 8MB
+//            SDRAM 32MB
+//----------------------------------------------------
+// Version: 0.31
+// Release Date: 2014/3/1
+// 1. Implement OSD UI demo: Input Signal Page...done,pass
+// 2. Implement OSD UI demo: Installation Page...done,pass
+// 3. Implement OSD UI demo: Display Setup Page...done,pass
+// 4. Implement OSD UI demo: Function Page...done,pass
+// 5. Implement OSD UI demo: Information Page...done,pass
+// 6. Seperate Each Page Window to a C file...done,pass
+// 7. 
+//
+//----------------------------------------------------
+// Version: 0.30
+// Release Date: 2014/3/1
+// 1. Implement OSD UI demo: Image Adjust Page...done,pass
+// 2. Modified xMultipage for Drawing PageIcon Text(Transparent Mode)...done
+// 3. Update BMP C files(Provided by Vivian)
+// 4. Modified FreeRTOSConfig.h: set configCHECK_FOR_STACK_OVERFLOW = 2,
+//    configUSE_MALLOC_FAILED_HOOK = 1, and others(...) 
+// 5. Found CPU is crashed within 10 seconds after Power-on/Reset(Random),
+//    --> check SDRAM setting: emc_LPC18xx_43xx.c
+//----------------------------------------------------
+//
+// Version: 0.29
+// Release Date: 2013/2/28,      ;2014/2/24
+// 1. LCD resolution change to 1024x768 16bpp @ 30 FPS...done, pass
+// 2. xButton Widget...done, pass
+// 3. Slider + Button Widget...done,pass
+// 4. Spin Box + Button Widget...done,pass
+// 5. Pop-up Window Widget...done,pass
+// 6. xMultiPage.c Hide ScrollBarH...done,pass
+// 7. Modified LCDConf.c for adding Set LCD resolution/16bpp/24bpp/FPS macro.
+
+//----------------------------------------------------
+// Version: 0.28
+// Release Date: ...
+// 1. Add Custom Multi-Page widget
+//
+//----------------------------------------------------
+// Version: 0.27
+// Release Date: 2014/2/19
+// 3. Modify SLIDER for using BMP for background...done,pass
+// 4. Performance Test.
+
+// 1. Add a customer widget for testing, SLIDER...done,pass
+// 2. Add GUI_Keyboard Input message from RS232 Console Input keycode...done, pass
+
+//----------------------------------------------------
+// Version: 0.26
+// Release Date: ...
+// 1. Set DEMO drawing display size to 800 x 600 for performance test...done,pass
+//
+//----------------------------------------------------
+// Version: 0.25
+// Release Date: 2014/2/11
+// 1. V0.24 has some bugs, hang at emWin Multi-tasking, 
+//    and dual frame buffer is not functional, give us V0.24,
+//    use V0.23 as base version for V0.25
+// 2. Add dual frame buffer by emWin GUI_MULTIBUF_x()...done,pass
+// 3. Add example for showing how to use GUI_MULTIBUF...done,pass
+// 4. Add 2 API for setup LCD_DMA FIFO watermark level...done, pass
+//
+//
+//
+//----------------------------------------------------
+// Version: 0.23
+// Release Date: 2014/1/30
+//
+// 1. LCD resolution change from 800x600 to 1024x768...done,pass
+//
+//----------------------------------------------------
+// Version: 0.22
+// Release Date: 2014/1/30
+// 1. Version 0.21 RTOS hang at GUI_Task(), give up this version,
+//      and use v0.20 as base version.
+// 2. upgrade FreeRTOS to latest version stable version v7.6.0 ...done, pass
+// 3. upgrade emWin to v5.22...done, pass
+// 4. Add Segger emWin GUI demo examples...done,pass
+// 5. Memory Footprint:
+//    SPIFI(Flash)    6,381,832
+//    MCU(SRAM):        198,712  (128,920 + 37,024 + 32,768) 
+//        
+//    SDRAM(RAM)     11,363,964  (960,000 + 4,194,304 + 6,209,660)
+//
+//    -----------------------------------------------------
+//      Code (inc. data)   RO Data    RW Data    ZI Data   
+//---------------------------------------------------------
+//    222842       3886    4517157       2389       2824   
+//
+
+
+//----------------------------------------------------
+// Version: 0.2
+// Release date: 2014/1/25
+// 1. Print emWin version on debug(UART) ... done
+// 2. Convert Font and add to emWin...done
+// 3. Display each font demo string on Screen...done
+// 4. Test Font Drawing performance for SPI-flash vs SDRAM...done
+// 5. Evaluate Font type memory size...done
+// 6. upgrade emWin to latest version v5.22 ...TODO
+// 7. upgrade FreeRTOS to latest version v8.x...TODO
+// 8. Set CPU to 166MHz for co-work with SDRAM @ 166MHz in Max Frequency...TODO
+//----------------------------------------------------
+// Version: 0.1
+// Release date: 2014/1/23
+// Tested Features:
+// 1. SPIFI Flash debug by LPC-Link2(J-Link) in keil...pass
+// 2. Code place in SPIFI, execute in IRAM...pass
+// 3. SDRAM paramaters mofified for EM63A165TS-6G...pass
+// 4. Board_LEDx_API...done
+// 5. Add emWin AOCI UI 1st Page demo...DVI Monitor can be turn on,
+//    but Monitor displays Green Lines in each odd vertical line 
+//    which is unexpected,
+//    now can display emWin UI, but green vertical lines are in background.
+// 6. Fixed LPCopen:LCD_Driver bugs
+//
+// TODO:
+//   1. Set CPU to 166MHz for co-work with SDRAM @ 166MHz in Max Frequency.
+//   2. Convert Customer's Font types and include them into emWin Library.
+//   3. Performance and Memory Size evaluation report
+//
+//----------------------------------------------------
+// Version: 0.0
+// Release Date: 2014/1/22
+// Tested Features:
+//    1. SDRAM pass
+//    2. SPIFI Flash
+//       A. Flash download by DFU ...pass
+//       B. Flash download by LPC-Link2(J-Link) ...pass
+//       C. Debug by Keil...Fail
+//    3. FreeRTOS run 4 tasks...pass
+//    4. emWin GUI_Task...pass
+//    5. DVI output by LCD...no.
+//-----------------------------------------------------
+

@@ -1,0 +1,132 @@
+/*********************************************************************
+*                Golden-IC Technology Co.,Ltd                        *
+*                       www.golden-ic.com                            *
+**********************************************************************
+*        (c) 2007 - 2014 Golden-IC Technology Co., Ltd               *
+*                                                                    *
+**********************************************************************
+*                                                                    *
+* Source file: xSLIDER.c                                           *
+*                                                                    *
+**********************************************************************
+*/
+
+
+#include <stdlib.h>
+
+#include "GUI.h"
+#include "SLIDER.h"
+#include "xSLIDER.h"
+#include "board.h"
+
+#if 1
+#undef  DEBUGOUT
+#undef  DEBUGSTR
+#define DEBUGOUT(...)
+#define DEBUGSTR(str)
+#endif
+
+/*********************************************************************
+*
+*       _Paint
+*/
+static void _Paint(SLIDER_Obj* pObj, WM_HWIN hObj)
+{
+    static xSLIDER_Obj tWidget;
+    GUI_CONST_STORAGE GUI_BITMAP *pBkBmp, *pSliderBmp;
+    GUI_RECT r, rFocus, rSlider;
+    int x0, xsize, ysize, Range, Value;
+    
+    WIDGET__GetClientRect(&pObj->Widget, &rFocus);
+    GUI__ReduceRect(&r, &rFocus, 1);
+    
+    SLIDER_GetUserData(hObj, &tWidget, sizeof(xSLIDER_Obj));
+    
+    pBkBmp = (tWidget.State == WIDGET_DISABLE) ? tWidget.pDisable_BkBmp : tWidget.pEnable_BkBmp;
+    pSliderBmp = (tWidget.State == WIDGET_DISABLE) ? tWidget.pDisable_Slider_Bmp : tWidget.pEnable_Slider_Bmp;
+    
+    xsize    = r.x1 - r.x0 - (tWidget.H_Space * 2) - pSliderBmp->XSize + 3;
+    ysize    = r.y1 - r.y0;
+    x0       = r.x0 + tWidget.H_Space + (pSliderBmp->XSize / 2);
+    Range    = tWidget.Range.Max - tWidget.Range.Min;
+    Value    = SLIDER_GetValue(hObj);
+    //DEBUGOUT("WIN(%d,%d,%d,%d) W:%d H:%d \r\n",rFocus.x0, rFocus.y0, rFocus.x1, rFocus.y1, xsize, ysize);
+    DEBUGOUT("Slider(%d,%d,%d)\r\n",tWidget.Range.Max, tWidget.Range.Min, Value);
+    
+    if (Range == 0) {
+      Range = 1;
+    }
+    
+    
+    /* Calculate Slider position */
+    rSlider    = r;
+    rSlider.x0 = x0 + ((U32)xsize * (U32)(Value - tWidget.Range.Min) / Range) - pSliderBmp->XSize / 2;
+    rSlider.x1 = rSlider.x0 + pSliderBmp->XSize;
+    
+    /* Draw the slider itself */
+    GUI_DrawBitmap(pBkBmp, r.x0, r.y0);
+    GUI_DrawBitmap(pSliderBmp, rSlider.x0, rSlider.y0 + ( (ysize - pSliderBmp->YSize)/2) + 2 );
+    
+    /* Draw focus */
+    if (pObj->Widget.State & WIDGET_STATE_FOCUS) {
+      GUI_SetColor(GUI_BLACK);
+      WIDGET__DrawFocusRect(&pObj->Widget, &rFocus, 0);
+    }
+  
+}
+
+
+void xSLIDER_Callback(WM_MESSAGE * pMsg)
+{
+    SLIDER_Handle hObj;
+    SLIDER_Obj* pObj;
+    const WM_KEY_INFO* pKeyInfo;
+    
+    hObj = pMsg->hWin;
+    pObj = SLIDER_H2P(hObj);
+    
+    /* Let widget handle the standard messages */
+    //if (WIDGET_HandleActive(hObj, pMsg) == 0) {
+    //  return;
+    //}
+    
+    switch (pMsg->MsgId)
+    {
+      case WM_PAINT:
+        _Paint(pObj, hObj);
+        return;
+      
+      
+      case WM_KEY:
+        pKeyInfo = (const WM_KEY_INFO*)(pMsg->Data.p);
+        if (pKeyInfo->PressedCnt > 0) 
+        {
+            
+            switch (pKeyInfo->Key)
+            {
+              case GUI_KEY_RIGHT:
+                SLIDER_Inc(hObj);
+                break;                    
+              
+              case GUI_KEY_LEFT:
+                SLIDER_Dec(hObj);
+                break;
+              
+              default:
+                SLIDER_Callback(pMsg);
+                break;
+            }
+        }
+        return;
+      
+      
+      default:
+        SLIDER_Callback(pMsg);
+        break;
+    }
+}
+  
+
+   
+    
+/*************************** End of file ****************************/

@@ -1,0 +1,12 @@
+﻿1. 日本語
+2. Deutsch
+3. Español
+4. Italiano
+5. Français
+6. Português
+7. Nederlands
+8. Svenska
+9. Norsk
+10. Русский
+11. 中文
+12. 繁體中文
